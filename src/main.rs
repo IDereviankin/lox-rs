@@ -18,7 +18,7 @@ fn run_prompt() {
     loop {
         print!("> ");
         let line = read_line();
-        if line == "" {
+        if line.is_empty() {
             break;
         };
         run(line);
