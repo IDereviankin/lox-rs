@@ -7,9 +7,9 @@ pub struct Scanner<'a> {
     tokens: Vec<Token>,
     stream: std::iter::Peekable<std::str::Chars<'a>>,
 
-    start: i32,
-    current: i32,
-    line: i32,
+    start: usize,
+    current: usize,
+    line: usize,
 }
 
 impl<'a> Scanner<'a> {
@@ -27,28 +27,28 @@ impl<'a> Scanner<'a> {
     }
 
     pub fn scan_tokens(mut self) -> Vec<Token> {
-        while let Some(c) = self.stream.next() {
+        while let Some(c) = self.next() {
             self.start = self.current;
 
             use TokenKind::*;
             match c {
-                '(' => self.addToken(LeftParen),
-                ')' => self.addToken(RightParen),
-                '{' => self.addToken(LeftBrace),
-                '}' => self.addToken(RightBrace),
-                ',' => self.addToken(Comma),
-                '.' => self.addToken(Dot),
-                '-' => self.addToken(Minus),
-                '+' => self.addToken(Plus),
-                ';' => self.addToken(Semicolon),
-                '*' => self.addToken(Star),
+                '(' => self.add_token(LeftParen),
+                ')' => self.add_token(RightParen),
+                '{' => self.add_token(LeftBrace),
+                '}' => self.add_token(RightBrace),
+                ',' => self.add_token(Comma),
+                '.' => self.add_token(Dot),
+                '-' => self.add_token(Minus),
+                '+' => self.add_token(Plus),
+                ';' => self.add_token(Semicolon),
+                '*' => self.add_token(Star),
                 '!' => {
                     let tok = if self.expect_next('=') {
                         BangEqual
                     } else {
                         Bang
                     };
-                    self.addToken(tok);
+                    self.add_token(tok);
                 }
                 '=' => {
                     let tok = if self.expect_next('=') {
@@ -56,7 +56,7 @@ impl<'a> Scanner<'a> {
                     } else {
                         Equal
                     };
-                    self.addToken(tok);
+                    self.add_token(tok);
                 }
                 '<' => {
                     let tok = if self.expect_next('=') {
@@ -64,7 +64,7 @@ impl<'a> Scanner<'a> {
                     } else {
                         Less
                     };
-                    self.addToken(tok);
+                    self.add_token(tok);
                 }
                 '>' => {
                     let tok = if self.expect_next('=') {
@@ -72,18 +72,21 @@ impl<'a> Scanner<'a> {
                     } else {
                         Greater
                     };
-                    self.addToken(tok);
+                    self.add_token(tok);
                 }
                 '/' => {
                     if self.expect_next('/') {
-                        while let Some(c) = self.stream.peek() {
-                            if *c == '\n' { break }
-                            self.stream.next();
+                        while let Some(c) = self.peek() {
+                            if c == '\n' {
+                                break;
+                            }
+                            self.next();
                         }
                     } else {
-                        self.addToken(Slash);
+                        self.add_token(Slash);
                     }
                 }
+                '"' => self.scan_string(),
                 ' ' | '\r' | '\t' => {}
                 '\n' => self.line += 1,
                 _ => panic!("Unexpected character at line {}", self.line),
@@ -93,18 +96,54 @@ impl<'a> Scanner<'a> {
         self.tokens
     }
 
-    fn addToken(&mut self, token: TokenKind) {
+    fn next(&mut self) -> Option<char> {
+        self.current += 1;
+        self.stream.next()
+    }
+
+    fn peek(&mut self) -> Option<char> {
+        self.stream.peek().copied()
+    }
+
+    fn is_eof(&mut self) -> bool {
+        self.peek().is_none()
+    }
+
+    fn add_token(&mut self, token: TokenKind) {
         self.tokens.push(Token::new(token, self.line))
     }
 
     fn expect_next(&mut self, a: char) -> bool {
-        if let Some(b) = self.stream.peek() {
-            if a == *b {
-                self.stream.next();
+        if let Some(b) = self.peek() {
+            if a == b {
+                self.next();
                 return true;
             }
         }
 
         false
+    }
+
+    fn scan_string(&mut self) {
+        while let Some(c) = self.peek() {
+            match c {
+                '"' => break,
+                '\n' => {
+                    self.line += 1;
+                    self.next();
+                }
+                _ => {
+                    self.next();
+                }
+            }
+        }
+
+        if self.is_eof() {
+            panic!("Unterminated string at line {}", self.line)
+        }
+
+        let value = self.source[self.start..self.current].to_owned();
+        self.add_token(TokenKind::String(value));
+        self.next();
     }
 }

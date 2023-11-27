@@ -24,11 +24,11 @@ pub enum TokenKind {
 #[derive(Debug)]
 pub struct Token {
     pub kind: TokenKind,
-    pub line: i32,
+    pub line: usize,
 }
 
 impl Token {
-    pub fn new(kind: TokenKind, line: i32) -> Self {
+    pub fn new(kind: TokenKind, line: usize) -> Self {
         Self { kind, line }
     }
 }
@@ -56,7 +56,7 @@ impl std::fmt::Display for Token {
             GreaterEqual => ">=".to_string(),
             Less => "<".to_string(),
             LessEqual => "<=".to_string(),
-            Identifier(id) => format!("{}", id),
+            Identifier(id) => id.to_string(),
             String(s) => format!("\"{}\"", s),
             Number(n) => format!("{}", n),
             And => "and".to_string(),
