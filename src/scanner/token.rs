@@ -17,8 +17,6 @@ pub enum TokenKind {
     // Keywords.
     And, Class, Else, False, Fun, For, If, Nil, Or,
     Print, Return, Super, This, True, Var, While,
-
-    Eof
 }
 
 #[derive(Debug)]
@@ -75,7 +73,6 @@ impl std::fmt::Display for Token {
             True => "true".to_string(),
             Var => "var".to_string(),
             While => "while".to_string(),
-            Eof => "\n".to_string(),
         }).unwrap();
         Ok(())
     }
