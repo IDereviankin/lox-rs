@@ -88,6 +88,7 @@ impl<'a> Scanner<'a> {
                 }
                 '"' => self.scan_string(),
                 '0'..='9' => self.scan_number(),
+                c if is_alpha(c) => self.scan_identifier(),
                 ' ' | '\r' | '\t' => {}
                 '\n' => self.line += 1,
                 _ => panic!("Unexpected character at line {}", self.line),
@@ -178,4 +179,53 @@ impl<'a> Scanner<'a> {
         let value = self.source[self.start..self.current].parse::<f64>().unwrap();
         self.add_token(TokenKind::Number(value));
     }
+
+    fn scan_identifier(&mut self) {
+        while let Some(c) = self.peek() {
+            if is_alpha_numeric(c) { self.next(); } else { break; }
+        }
+
+        let value = &self.source[self.start..self.current];
+
+        use TokenKind::*;
+        let tok = match value {
+            "and" => And,
+            "class" => Class,
+            "else" => Else,
+            "false" => False,
+            "for" => For,
+            "fun" => Fun,
+            "if" => If,
+            "nil" => Nil,
+            "or" => Or,
+            "print" => Print,
+            "return" => Return,
+            "super" => Super,
+            "this" => This,
+            "true" => True,
+            "var" => Var,
+            "while" => While,
+            s => Identifier(s.to_owned()),
+        };
+
+        self.add_token(tok);
+    }
+}
+
+fn is_digit(c: char) -> bool {
+    match c {
+        '0'..='9' => true,
+        _ => false,
+    }
+}
+
+fn is_alpha(c: char) -> bool {
+    match c {
+        'a'..='z' | 'A'..='Z' | '_' => true,
+        _ => false,
+    }
+}
+
+fn is_alpha_numeric(c: char) -> bool {
+    is_alpha(c) || is_digit(c)
 }
