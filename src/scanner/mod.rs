@@ -28,7 +28,7 @@ impl<'a> Scanner<'a> {
 
     pub fn scan_tokens(mut self) -> Vec<Token> {
         while let Some(c) = self.next() {
-            self.start = self.current;
+            self.start = self.current - 1;
 
             use TokenKind::*;
             match c {
@@ -87,6 +87,7 @@ impl<'a> Scanner<'a> {
                     }
                 }
                 '"' => self.scan_string(),
+                '0'..='9' => self.scan_number(),
                 ' ' | '\r' | '\t' => {}
                 '\n' => self.line += 1,
                 _ => panic!("Unexpected character at line {}", self.line),
@@ -142,8 +143,39 @@ impl<'a> Scanner<'a> {
             panic!("Unterminated string at line {}", self.line)
         }
 
-        let value = self.source[self.start..self.current].to_owned();
+        let value = self.source[(self.start + 1)..self.current].to_owned();
         self.add_token(TokenKind::String(value));
         self.next();
+    }
+
+    fn scan_number(&mut self) {
+        while let Some(c) = self.peek() {
+            match c {
+                '0'..='9' => {
+                    self.next();
+                }
+                _ => break,
+            }
+        }
+
+        if let Some('.') = self.peek() {
+            let mut temp_stream = self.stream.clone();
+            temp_stream.next();
+            if let Some('0'..='9') = temp_stream.peek() {
+                self.next();
+
+                while let Some(c) = self.peek() {
+                    match c {
+                        '0'..='9' => {
+                            self.next();
+                        }
+                        _ => break,
+                    }
+                }
+            }
+        }
+
+        let value = self.source[self.start..self.current].parse::<f64>().unwrap();
+        self.add_token(TokenKind::Number(value));
     }
 }
