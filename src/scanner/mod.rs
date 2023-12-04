@@ -82,6 +82,8 @@ impl<'a> Scanner<'a> {
                             }
                             self.next();
                         }
+                    } else if self.expect_next('*') {
+                        self.scan_multiline_comment()
                     } else {
                         self.add_token(Slash);
                     }
@@ -176,13 +178,19 @@ impl<'a> Scanner<'a> {
             }
         }
 
-        let value = self.source[self.start..self.current].parse::<f64>().unwrap();
+        let value = self.source[self.start..self.current]
+            .parse::<f64>()
+            .unwrap();
         self.add_token(TokenKind::Number(value));
     }
 
     fn scan_identifier(&mut self) {
         while let Some(c) = self.peek() {
-            if is_alpha_numeric(c) { self.next(); } else { break; }
+            if is_alpha_numeric(c) {
+                self.next();
+            } else {
+                break;
+            }
         }
 
         let value = &self.source[self.start..self.current];
@@ -209,6 +217,31 @@ impl<'a> Scanner<'a> {
         };
 
         self.add_token(tok);
+    }
+
+    fn scan_multiline_comment(&mut self) {
+        let mut nesting = 0;
+
+        while let Some(c) = self.next() {
+            match c {
+                '/' => {
+                    if self.expect_next('*') {
+                        nesting += 1;
+                    }
+                }
+
+                '*' => {
+                    if self.expect_next('/') {
+                        if nesting == 0 {
+                            break;
+                        } else {
+                            nesting -= 1
+                        }
+                    }
+                }
+                _ => {}
+            }
+        }
     }
 }
 
