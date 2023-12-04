@@ -1,6 +1,4 @@
-mod token;
-
-use self::token::{Token, TokenKind};
+use crate::token::{Token, TokenKind};
 
 pub struct Scanner<'a> {
     source: &'a str,
